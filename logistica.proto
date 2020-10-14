@@ -1,0 +1,11 @@
+syntax = "proto3";
+package logistica;
+
+message Message {
+  string body = 1;
+}
+
+service LogisticaService {
+  rpc SayHello(Message) returns (Message) {}
+}
+//chat es camiones

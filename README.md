@@ -1,30 +1,30 @@
-# sd-t1
+Sebastián Rojas 201773598-8
+Fabio Pazos 201773503-1
 
-Integrantes:
-	Camilo farah, rol 201773534-1
-	Christian Sepúlveda, rol 201791003-8
+
+Considerar -> 	dist61 : logistica
+		dist62 : finanzas
+		dist63 : clientes
+		dist64 : camiones
 
 Para ejecutar:
-	Para iniciar el servidor RabbitMQ, ejecutar el siguiente comando tanto en ssh root@dist54 y en ssh root@dist56:
-		>> /sbin/service rabbitmq-server start
-
-	Luego, cada maquina virtual (VM) tiene asignada una de las cuatro entidades. Por lo tanto, se debe ejecutar el siguiente comando para cada uno de ellas:
-		- Para ssh root@dist53:  
-		>> make clientes
-		
-		- Para ssh root@dist54:
-		>> make logistica
-
-		- Para ssh root@dist55:
-		>> make camiones
-
-		- Para ssh root@dist56:
-		>> make finanza
+	-Ejecutar make run en cada maquina ejecutará el código correspondiente.
+	-Tanto en la máquina asociada a logística como a finanzas ademas del correspondiente go run file.go se ejecuta
+	el siguiente comando /sbin/service rabbitmq-server start, el cual inicializa el server de rabbit.
+	
 
 Consideraciones:
-	- Si desea utilizar sus propios datos para los pedidos de paquetes de clientes, modifique los archivos csv ("pymes.csv" y/o "retail.csv") como corresponda:
-		- La primera línea del archivo se ignorará, pues equivaldrá a los headers. Luego:
-			- para retail: id,producto,valor,tienda,destino
-			- para pymes: id,producto,valor,tienda,destino,prioritario
+	- El timestamp utilizado para la creación de los diferentes registros presentó problemas, ya que el formateo generaba que la hora permaneciera fija
+	  en 00:00, a pesar de los esfuerzos y los múltiples tutoriales revisados.
+	- Se asumió que la fecha de entrega asociada a los paquetes era 0 en caso de que estos no fueran entregados.
+	- En el csv de ejemplo (pymes) se trabajó el booleano de la siguiente forma:
+		1: Prioritario
+		0: Normal
+	- El archivo proto se entrega compilado para facilitar la revisión de la tarea.
+	- A tener en cuenta que se decidió debido al contexto del problema no optar por resetear la creación de los diferentes csv de registros asociados a
+	  camiones, finanzas y logística, ya que en estos se guardaba información necesaria para la construcción de reportes "históricos" como el balance
+	  global de la "empresa".
+	
+	
 
 	

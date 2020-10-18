@@ -151,7 +151,7 @@ func crearRegistroC( pCam PaqueteCamion, idC int) {
 func prob80() int {
   rand.Seed(time.Now().UnixNano())
 	prob := rand.Intn(100)
-  
+
 	if prob < 81 {
 		return 1
 	} else {
@@ -273,7 +273,7 @@ func despacharPaquetes(camion *camiones, tEntrega int, conn *grpc.ClientConn){
 }
 func main() {
   var conn *grpc.ClientConn
-  conn, err := grpc.Dial(":9000", grpc.WithInsecure())
+  conn, err := grpc.Dial("dist61:9000", grpc.WithInsecure())
   if err != nil{
     log.Fatalf("could not connect: %s", err)
   }

@@ -1,3 +1,5 @@
+(se ve mejor del browser)
+
 Sebastián Rojas 201773598-8
 Fabio Pazos 201773503-1
 

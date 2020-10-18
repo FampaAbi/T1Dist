@@ -36,6 +36,19 @@ type Paquete struct {
   Fecha_entrega string
 }
 
+type Finanzas struct {
+	IDPaquete string
+	Tipo      string
+	Valor     int
+	Intentos  int
+	Estado    string
+}
+func failOnError(err error, msg string) {
+	if err != nil {
+		log.Fatalf("%s: %s", msg, err)
+	}
+}
+
 func(s *Papi) SayHello(ctx context.Context, message *pb.Message) (*pb.Message,error){
   log.Printf("Received message body from client: %s", message.Body)
   return &pb.Message{Body: "Hello From the Server!"}, nil
@@ -136,6 +149,7 @@ func crearRegistro(nro_seguimiento int, orden *pb.Orden) {
 	writer.WriteAll(data)
 }
 
+
 func (s *Papi) UpdateEstado(ctx context.Context, estado_msg *pb.Estado) (*pb.Message, error) {
   i := encontrarP(s.pedidos, int(estado_msg.GetSeguimiento()))
   //fmt.Println("nr seguimiento:",estado_msg.GetSeguimiento())
@@ -144,30 +158,30 @@ func (s *Papi) UpdateEstado(ctx context.Context, estado_msg *pb.Estado) (*pb.Mes
     s.pedidos[i].intentos = int(estado_msg.GetIntentos())
 
     // RABBIT --------
-    conn, err := amqp.Dial("amqp://dist61:dist61@dist61:9000/")
-	   failOnError(err, "Failed to connect to RabbitMQ")
-	    defer conn.Close()
+    conn, err := amqp.Dial("amqp://dist61:dist61@dist61:5672/")
+	failOnError(err, "Failed to connect to RabbitMQ")
+	defer conn.Close()
 
-	     ch, err := conn.Channel()
-	     failOnError(err, "Failed to open a channel")
-       defer ch.Close()
+	ch, err := conn.Channel()
+	failOnError(err, "Failed to open a channel")
+	defer ch.Close()
 
-	      q, err := ch.QueueDeclare(
-		    "hello", // name
-		     false,   // durable
-		     false,   // delete when unused
-		     false,   // exclusive
-		     false,   // no-wait
-		    nil,     // arguments
-	       )
+	q, err := ch.QueueDeclare(
+		"hello", // name
+		false,   // durable
+		false,   // delete when unused
+		false,   // exclusive
+		false,   // no-wait
+		nil,     // arguments
+	)
 	failOnError(err, "Failed to declare a queue")
 
-	finanzas := Paquete{
+	finanzas := Finanzas{
 		IDPaquete: s.pedidos[i].IDPaquete,
-		tipo:      s.pedidos[i].tipo,
-		valor:     s.pedidos[i].valor,
-		intentos:  s.pedidos[i].intentos,
-		estado:    s.pedidos[i].estado}
+		Tipo:      s.pedidos[i].tipo,
+		Valor:     int(s.pedidos[i].valor),
+		Intentos:  s.pedidos[i].intentos,
+		Estado:    s.pedidos[i].estado}
 
 	b, _ := json.Marshal(finanzas)
 
@@ -181,17 +195,14 @@ func (s *Papi) UpdateEstado(ctx context.Context, estado_msg *pb.Estado) (*pb.Mes
 			Body:        []byte(b),
 		})
 	failOnError(err, "Failed to publish a message")
+
     //---------------
     fmt.Println("Entrega finalizada para el paquete con número de entrega:",estado_msg.GetSeguimiento(),"con estado ",estado_msg.GetEstado())
     return &pb.Message{Body: "Orden Finalizada "}, nil
   }
   return &pb.Message {Body: "Ocurrió un error"}, nil
 }
-func failOnError(err error, msg string) {
-  if err != nil {
-    log.Fatalf("%s: %s", msg, err)
-  }
-}
+
 func (s *Papi) GetPackage(ctx context.Context, camion *pb.Camion)(*pb.PaqueteMSG/*,int*/, error){
 
   if camion.GetTipo() == "normal" {

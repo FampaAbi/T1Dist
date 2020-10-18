@@ -11,7 +11,8 @@ import (
   "strconv"
   "os"
   "encoding/csv"
-  //"github.com/streadway/amqp"
+  "github.com/streadway/amqp"
+  "encoding/json"
 )
 
 type Papi struct{ //struct que maneja la info general de la logistica (EL PAPI)
@@ -141,12 +142,56 @@ func (s *Papi) UpdateEstado(ctx context.Context, estado_msg *pb.Estado) (*pb.Mes
   if i != -1 {
     s.pedidos[i].estado = estado_msg.GetEstado()
     s.pedidos[i].intentos = int(estado_msg.GetIntentos())
+
+    // RABBIT --------
+    conn, err := amqp.Dial("amqp://dist61:dist61@dist61:9000/")
+	   failOnError(err, "Failed to connect to RabbitMQ")
+	    defer conn.Close()
+
+	     ch, err := conn.Channel()
+	     failOnError(err, "Failed to open a channel")
+       defer ch.Close()
+
+	      q, err := ch.QueueDeclare(
+		    "hello", // name
+		     false,   // durable
+		     false,   // delete when unused
+		     false,   // exclusive
+		     false,   // no-wait
+		    nil,     // arguments
+	       )
+	failOnError(err, "Failed to declare a queue")
+
+	finanzas := Paquete{
+		IDPaquete: s.pedidos[i].IDPaquete,
+		tipo:      s.pedidos[i].tipo,
+		valor:     s.pedidos[i].valor,
+		intentos:  s.pedidos[i].intentos,
+		estado:    s.pedidos[i].estado}
+
+	b, _ := json.Marshal(finanzas)
+
+	err = ch.Publish(
+		"",     // exchange
+		q.Name, // routing key
+		false,  // mandatory
+		false,  // immediate
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        []byte(b),
+		})
+	failOnError(err, "Failed to publish a message")
+    //---------------
     fmt.Println("Entrega finalizada para el paquete con número de entrega:",estado_msg.GetSeguimiento(),"con estado ",estado_msg.GetEstado())
     return &pb.Message{Body: "Orden Finalizada "}, nil
   }
   return &pb.Message {Body: "Ocurrió un error"}, nil
 }
-
+func failOnError(err error, msg string) {
+  if err != nil {
+    log.Fatalf("%s: %s", msg, err)
+  }
+}
 func (s *Papi) GetPackage(ctx context.Context, camion *pb.Camion)(*pb.PaqueteMSG/*,int*/, error){
 
   if camion.GetTipo() == "normal" {
